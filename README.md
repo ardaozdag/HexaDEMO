@@ -173,11 +173,3 @@ npx expo export --platform web
 npx expo install @expo/cli
 npx eas build
 ```
-
-## 📞 Support
-
-This is a demonstration project created for technical assessment purposes.
-
-## 📄 License
-
-This project is for demonstration purposes only. 
