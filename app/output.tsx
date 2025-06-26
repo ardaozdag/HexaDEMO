@@ -12,9 +12,10 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { ArrowLeft, Download, Share2, Heart } from 'lucide-react-native';
 
 export default function OutputScreen() {
-  const { prompt, style } = useLocalSearchParams<{
+  const { prompt, style, imageUrl } = useLocalSearchParams<{
     prompt: string;
     style: string;
+    imageUrl: string;
   }>();
 
   const handleBack = () => {
@@ -36,8 +37,8 @@ export default function OutputScreen() {
     console.log('Like logo');
   };
 
-  // Mock logo URL - in a real app, this would come from your AI service
-  const mockLogoUrl = 'https://images.pexels.com/photos/1029230/pexels-photo-1029230.jpeg?auto=compress&cs=tinysrgb&w=400&h=400&fit=crop';
+  // Use the imageUrl from Firebase or fallback to mock
+  const logoUrl = imageUrl || 'https://images.pexels.com/photos/1029230/pexels-photo-1029230.jpeg?auto=compress&cs=tinysrgb&w=400&h=400&fit=crop';
 
   return (
     <SafeAreaView style={styles.container}>
@@ -59,7 +60,7 @@ export default function OutputScreen() {
           <View style={styles.logoContainer}>
             <View style={styles.logoWrapper}>
               <Image
-                source={{ uri: mockLogoUrl }}
+                source={{ uri: logoUrl }}
                 style={styles.logoImage}
                 resizeMode="cover"
               />
@@ -74,7 +75,7 @@ export default function OutputScreen() {
 
             <View style={styles.styleContainer}>
               <Text style={styles.styleLabel}>Style:</Text>
-              <Text style={styles.styleText}>{style.charAt(0).toUpperCase() + style.slice(1)}</Text>
+              <Text style={styles.styleText}>{style?.charAt(0).toUpperCase() + style?.slice(1)}</Text>
             </View>
           </View>
 

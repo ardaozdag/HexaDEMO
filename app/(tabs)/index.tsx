@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -9,11 +9,12 @@ import {
   ScrollView,
   Dimensions,
   ActivityIndicator,
+  Alert,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
-import { Sparkles, Slash, Type } from 'lucide-react-native';
-import { StatusChip } from '@/components/StatusChip';
+import { Sparkles, Slash, Type, CheckCircle } from 'lucide-react-native';
+import { LogoService, GenerationData } from '@/services/logoService';
 
 const { width } = Dimensions.get('window');
 
@@ -59,31 +60,119 @@ const logoStyles: LogoStyle[] = [
 export default function CreateScreen() {
   const [prompt, setPrompt] = useState('');
   const [selectedStyle, setSelectedStyle] = useState('none');
+  const [generationId, setGenerationId] = useState<string | null>(null);
+  const [generationData, setGenerationData] = useState<GenerationData | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
-  const [generationStatus, setGenerationStatus] = useState<'idle' | 'processing' | 'done'>('idle');
 
-  const handleCreate = () => {
+  // Clean up listener on component unmount
+  useEffect(() => {
+    let unsubscribe: (() => void) | null = null;
+
+    if (generationId) {
+      unsubscribe = LogoService.listenToGeneration(
+        generationId,
+        (data) => {
+          setGenerationData(data);
+          if (data?.status === 'done' || data?.status === 'error') {
+            setIsGenerating(false);
+          }
+        },
+        (error) => {
+          console.error('Error listening to generation:', error);
+          setIsGenerating(false);
+          Alert.alert('Error', 'Failed to get generation updates. Please try again.');
+        }
+      );
+    }
+
+    return () => {
+      if (unsubscribe) {
+        unsubscribe();
+      }
+    };
+  }, [generationId]);
+
+  const handleCreate = async () => {
     if (!prompt.trim()) {
+      Alert.alert('Error', 'Please enter a prompt for your logo.');
       return;
     }
-    setIsGenerating(true);
-    setGenerationStatus('processing');
-    setTimeout(() => {
-      setGenerationStatus('done');
+
+    try {
+      setIsGenerating(true);
+      setGenerationData(null);
+      
+      // Call Firebase Function to start generation
+      const response = await LogoService.startGeneration(prompt.trim(), selectedStyle);
+      
+      if (response.success) {
+        setGenerationId(response.generationId);
+        console.log('Generation started successfully:', response.message);
+      } else {
+        throw new Error(response.message || 'Failed to start generation');
+      }
+    } catch (error) {
+      console.error('Error starting generation:', error);
       setIsGenerating(false);
-    }, 120000);
+      Alert.alert(
+        'Error', 
+        error instanceof Error ? error.message : 'Failed to start logo generation. Please try again.'
+      );
+    }
   };
 
   const handleChipPress = () => {
-    if (generationStatus === 'done') {
+    if (generationData?.status === 'done' && generationData.imageUrl) {
       router.push({
         pathname: '/output',
         params: {
-          prompt,
-          style: selectedStyle,
+          prompt: generationData.prompt,
+          style: generationData.style,
+          imageUrl: generationData.imageUrl,
         },
       });
     }
+  };
+
+  const getStatusChip = () => {
+    if (!isGenerating && !generationData) return null;
+
+    if (generationData?.status === 'done') {
+      return (
+        <TouchableOpacity style={styles.statusChip} onPress={handleChipPress}>
+          <LinearGradient
+            colors={['#10b981', '#059669']}
+            style={styles.statusChipGradient}
+          >
+            <CheckCircle size={20} color="#ffffff" />
+            <View style={styles.statusChipTextContainer}>
+              <Text style={styles.statusChipTitle}>Your Design is Ready!</Text>
+              <Text style={styles.statusChipSubtitle}>Tap to see it</Text>
+            </View>
+          </LinearGradient>
+        </TouchableOpacity>
+      );
+    }
+
+    if (generationData?.status === 'error') {
+      return (
+        <View style={styles.errorChip}>
+          <Text style={styles.errorChipTitle}>Oops, something went wrong!</Text>
+          <Text style={styles.errorChipSubtitle}>Click to try again</Text>
+        </View>
+      );
+    }
+
+    // Processing state
+    return (
+      <View style={styles.processingChip}>
+        <ActivityIndicator size="small" color="#fff" style={{ marginRight: 12 }} />
+        <View>
+          <Text style={styles.processingChipTitle}>Creating Your Design...</Text>
+          <Text style={styles.processingChipSubtitle}>Ready in 2 minutes</Text>
+        </View>
+      </View>
+    );
   };
 
   const isCreateDisabled = !prompt.trim() || isGenerating;
@@ -101,15 +190,8 @@ export default function CreateScreen() {
             <Text style={styles.title}>AI Logo</Text>
           </View>
 
-          {isGenerating && (
-            <View style={styles.loadingCard}>
-              <ActivityIndicator size="small" color="#fff" style={{ marginRight: 12 }} />
-              <View>
-                <Text style={styles.loadingText}>Creating Your Design...</Text>
-                <Text style={styles.loadingSubtext}>Ready in 2 minutes</Text>
-              </View>
-            </View>
-          )}
+          {/* Status Chip */}
+          {getStatusChip()}
 
           <View style={[styles.promptSection, isGenerating && styles.disabledSection]} pointerEvents={isGenerating ? 'none' : 'auto'}>
             <View style={styles.promptHeader}>
@@ -216,7 +298,33 @@ const styles = StyleSheet.create({
     color: '#ffffff',
     textAlign: 'center',
   },
-  loadingCard: {
+  // Status Chip Styles
+  statusChip: {
+    marginBottom: 18,
+    marginTop: 10,
+    borderRadius: 16,
+    overflow: 'hidden',
+  },
+  statusChipGradient: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 18,
+  },
+  statusChipTextContainer: {
+    marginLeft: 12,
+  },
+  statusChipTitle: {
+    color: '#fff',
+    fontWeight: '600',
+    fontSize: 16,
+    marginBottom: 2,
+  },
+  statusChipSubtitle: {
+    color: '#e5e7eb',
+    fontSize: 13,
+    fontWeight: '400',
+  },
+  processingChip: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: 'rgba(255,255,255,0.08)',
@@ -225,14 +333,32 @@ const styles = StyleSheet.create({
     marginBottom: 18,
     marginTop: 10,
   },
-  loadingText: {
+  processingChipTitle: {
     color: '#fff',
     fontWeight: '600',
     fontSize: 16,
     marginBottom: 2,
   },
-  loadingSubtext: {
+  processingChipSubtitle: {
     color: '#b3b3b3',
+    fontSize: 13,
+    fontWeight: '400',
+  },
+  errorChip: {
+    backgroundColor: '#ef4444',
+    borderRadius: 16,
+    padding: 18,
+    marginBottom: 18,
+    marginTop: 10,
+  },
+  errorChipTitle: {
+    color: '#fff',
+    fontWeight: '600',
+    fontSize: 16,
+    marginBottom: 2,
+  },
+  errorChipSubtitle: {
+    color: '#fca5a5',
     fontSize: 13,
     fontWeight: '400',
   },
