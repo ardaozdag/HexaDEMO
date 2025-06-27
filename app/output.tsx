@@ -9,7 +9,7 @@ import {
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router, useLocalSearchParams } from 'expo-router';
-import { ArrowLeft, Download, Share2, Heart } from 'lucide-react-native';
+import { ArrowLeft } from 'lucide-react-native';
 
 export default function OutputScreen() {
   const { prompt, style, imageUrl } = useLocalSearchParams<{
@@ -20,21 +20,6 @@ export default function OutputScreen() {
 
   const handleBack = () => {
     router.back();
-  };
-
-  const handleDownload = () => {
-    // Implement download functionality
-    console.log('Download logo');
-  };
-
-  const handleShare = () => {
-    // Implement share functionality
-    console.log('Share logo');
-  };
-
-  const handleLike = () => {
-    // Implement like functionality
-    console.log('Like logo');
   };
 
   // Use the imageUrl from Firebase or fallback to mock
@@ -77,23 +62,6 @@ export default function OutputScreen() {
               <Text style={styles.styleLabel}>Style:</Text>
               <Text style={styles.styleText}>{style?.charAt(0).toUpperCase() + style?.slice(1)}</Text>
             </View>
-          </View>
-
-          <View style={styles.actionsContainer}>
-            <TouchableOpacity style={styles.actionButton} onPress={handleLike}>
-              <Heart size={20} color="#ef4444" />
-              <Text style={styles.actionText}>Like</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity style={styles.actionButton} onPress={handleShare}>
-              <Share2 size={20} color="#8b5cf6" />
-              <Text style={styles.actionText}>Share</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity style={styles.actionButton} onPress={handleDownload}>
-              <Download size={20} color="#10b981" />
-              <Text style={styles.actionText}>Download</Text>
-            </TouchableOpacity>
           </View>
         </ScrollView>
 
@@ -198,21 +166,6 @@ const styles = StyleSheet.create({
   styleText: {
     fontSize: 16,
     color: '#ffffff',
-  },
-  actionsContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    marginBottom: 40,
-  },
-  actionButton: {
-    alignItems: 'center',
-    gap: 8,
-    padding: 16,
-  },
-  actionText: {
-    fontSize: 14,
-    color: '#9ca3af',
-    fontWeight: '500',
   },
   footer: {
     padding: 20,
