@@ -8,14 +8,13 @@ import { getFunctions } from 'firebase/functions';
 
 // Firebase configuration using environment variables
 const firebaseConfig = {
-  apiKey: process.env.EXPO_PUBLIC_FIREBASE_API_KEY || "AIzaSyA3WJowc7BoKdI0tZWJ_l6lp3fDH88BoJI",
-  authDomain: process.env.EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN || "hexademo-1b12a.firebaseapp.com",
-  projectId: process.env.EXPO_PUBLIC_FIREBASE_PROJECT_ID || "hexademo-1b12a",
-  storageBucket: process.env.EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET || "hexademo-1b12a.firebasestorage.app",
-  messagingSenderId: process.env.EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID || "320424255797",
-  appId: process.env.EXPO_PUBLIC_FIREBASE_APP_ID || "1:320424255797:web:10aa9c3aef3c94f3be6c7c"
+  apiKey: process.env.EXPO_PUBLIC_FIREBASE_API_KEY,
+  authDomain: process.env.EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN,
+  projectId: process.env.EXPO_PUBLIC_FIREBASE_PROJECT_ID,
+  storageBucket: process.env.EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: process.env.EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
+  appId: process.env.EXPO_PUBLIC_FIREBASE_APP_ID
 };
-
 
 // Validate configuration
 if (!firebaseConfig.apiKey || !firebaseConfig.projectId) {
